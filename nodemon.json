@@ -1,0 +1,5 @@
+{
+  "ignore": ["db.json", "*.log"],
+  "ext": "js,json",
+  "exec": "node server.js"
+}

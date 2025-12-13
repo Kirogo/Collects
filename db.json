@@ -1,0 +1,100 @@
+{
+  "users": [
+    {
+      "id": "USR1001",
+      "username": "admin",
+      "email": "admin@ncbabank.co.ke",
+      "password": "$2a$10$9k3bqmWmK1CjuBXE3fodR.nYIHw9VW/pQWCUuTdjFWt9UTiSu9.5m",
+      "fullName": "System Administrator",
+      "employeeId": "EMP001",
+      "role": "ADMIN",
+      "department": "IT",
+      "isActive": true,
+      "createdAt": "2025-12-12T10:01:18.751Z",
+      "updatedAt": "2025-12-13T10:57:24.887Z",
+      "lastLogin": "2025-12-13T10:57:24.887Z"
+    },
+    {
+      "id": "USR1002",
+      "username": "supervisor",
+      "email": "supervisor@ncbabank.co.ke",
+      "password": "$2a$10$9k3bqmWmK1CjuBXE3fodR.oECRkaT/4JT5evfFWSLe17.rtLlV5Cy",
+      "fullName": "Collections Supervisor",
+      "employeeId": "EMP002",
+      "role": "SUPERVISOR",
+      "department": "Collections",
+      "isActive": true,
+      "createdAt": "2025-12-12T10:01:18.884Z",
+      "updatedAt": "2025-12-12T10:01:18.884Z",
+      "lastLogin": null
+    },
+    {
+      "id": "USR1003",
+      "username": "agent1",
+      "email": "agent1@ncbabank.co.ke",
+      "password": "$2a$10$9k3bqmWmK1CjuBXE3fodR.CjyT/YIzqvhp3jOxh2xzSDTWCU5IiKy",
+      "fullName": "John Mwangi",
+      "employeeId": "EMP003",
+      "role": "AGENT",
+      "department": "Collections",
+      "isActive": true,
+      "createdAt": "2025-12-12T10:01:18.971Z",
+      "updatedAt": "2025-12-12T10:01:18.971Z",
+      "lastLogin": null
+    }
+  ],
+  "customers": [
+    {
+      "id": "CUS1001",
+      "phoneNumber": "254712345678",
+      "name": "John Kamau",
+      "customerId": "CUST001",
+      "accountNumber": "LOAN001234",
+      "loanBalance": 150000,
+      "arrears": 25000,
+      "totalRepayments": 50000,
+      "lastPaymentDate": "2024-01-05T10:30:00.000Z",
+      "isActive": true,
+      "createdAt": "2024-01-01T09:00:00.000Z",
+      "updatedAt": "2024-01-10T14:20:00.000Z",
+      "createdBy": "admin"
+    },
+    {
+      "id": "CUS1002",
+      "phoneNumber": "254723456789",
+      "name": "Mary Wanjiku",
+      "customerId": "CUST002",
+      "accountNumber": "LOAN001235",
+      "loanBalance": 75000,
+      "arrears": 15000,
+      "totalRepayments": 25000,
+      "lastPaymentDate": "2024-01-08T11:15:00.000Z",
+      "isActive": true,
+      "createdAt": "2024-01-02T10:00:00.000Z",
+      "updatedAt": "2024-01-10T15:30:00.000Z",
+      "createdBy": "admin"
+    },
+    {
+      "id": "CUS1003",
+      "phoneNumber": "254734567890",
+      "name": "Peter Ochieng",
+      "customerId": "CUST003",
+      "accountNumber": "LOAN001236",
+      "loanBalance": 250000,
+      "arrears": 50000,
+      "totalRepayments": 100000,
+      "lastPaymentDate": "2024-01-03T14:45:00.000Z",
+      "isActive": true,
+      "createdAt": "2024-01-03T11:00:00.000Z",
+      "updatedAt": "2024-01-10T16:45:00.000Z",
+      "createdBy": "admin"
+    }
+  ],
+  "transactions": [],
+  "settings": {
+    "lastCustomerId": 1000,
+    "lastTransactionId": 1000,
+    "lastUserId": 1000,
+    "lastCustomerInternalId": 1000
+  }
+}
