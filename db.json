@@ -3,37 +3,28 @@
     {
       "id": 1,
       "username": "admin",
-      "email": "admin@ncbabank.co.ke",
+      "email": "admin@ncbagroup.com",
       "password": "admin@1",
-      "name": "Admin User",
+      "name": "Admin",
       "role": "admin",
       "department": "Collections"
     },
     {
       "id": 2,
-      "username": "supervisor",
-      "email": "supervisor@ncbabank.co.ke",
-      "password": "Super@2024",
-      "name": "Supervisor User",
-      "role": "supervisor",
+      "username": "chris.paul",
+      "email": "chris.paul@ncbagroup.com",
+      "password": "cpaul@2025",
+      "name": "Chris Paul",
+      "role": "admin",
       "department": "Collections"
     },
     {
       "id": 3,
-      "username": "agent1",
-      "email": "agent1@ncbabank.co.ke",
-      "password": "Agent@2024",
-      "name": "Agent User",
-      "role": "agent",
-      "department": "Collections"
-    },
-    {
-      "id": 4,
-      "username": "staff",
-      "email": "staff@ncbabank.co.ke",
-      "password": "password123",
-      "name": "Collections Staff",
-      "role": "staff",
+      "username": "samuel.kirogo",
+      "email": "samuel.kirogo@ncbagroup.com",
+      "password": "pass1234",
+      "name": "Samuel Kirogo",
+      "role": "admin",
       "department": "Collections"
     }
   ],
@@ -81,6 +72,21 @@
       "isActive": true,
       "createdAt": "2024-01-03T11:00:00.000Z",
       "updatedAt": "2024-01-10T16:45:00.000Z",
+      "createdBy": "admin"
+    },
+     {
+      "id": "CUS1004",
+      "phoneNumber": "254707812730",
+      "name": "Tabitha Wambui",
+      "customerId": "CUST004",
+      "accountNumber": "LOAN001237",
+      "loanBalance": 250000,
+      "arrears": 25000,
+      "totalRepayments": 150000,
+      "lastPaymentDate": "2024-01-05T10:30:00.000Z",
+      "isActive": true,
+      "createdAt": "2024-01-01T09:00:00.000Z",
+      "updatedAt": "2024-01-10T14:20:00.000Z",
       "createdBy": "admin"
     }
   ],
