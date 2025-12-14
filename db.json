@@ -1,46 +1,40 @@
 {
   "users": [
     {
-      "id": "USR1001",
+      "id": 1,
       "username": "admin",
       "email": "admin@ncbabank.co.ke",
-      "password": "$2a$10$9k3bqmWmK1CjuBXE3fodR.nYIHw9VW/pQWCUuTdjFWt9UTiSu9.5m",
-      "fullName": "System Administrator",
-      "employeeId": "EMP001",
-      "role": "ADMIN",
-      "department": "IT",
-      "isActive": true,
-      "createdAt": "2025-12-12T10:01:18.751Z",
-      "updatedAt": "2025-12-13T10:57:24.887Z",
-      "lastLogin": "2025-12-13T10:57:24.887Z"
+      "password": "admin@1",
+      "name": "Admin User",
+      "role": "admin",
+      "department": "Collections"
     },
     {
-      "id": "USR1002",
+      "id": 2,
       "username": "supervisor",
       "email": "supervisor@ncbabank.co.ke",
-      "password": "$2a$10$9k3bqmWmK1CjuBXE3fodR.oECRkaT/4JT5evfFWSLe17.rtLlV5Cy",
-      "fullName": "Collections Supervisor",
-      "employeeId": "EMP002",
-      "role": "SUPERVISOR",
-      "department": "Collections",
-      "isActive": true,
-      "createdAt": "2025-12-12T10:01:18.884Z",
-      "updatedAt": "2025-12-12T10:01:18.884Z",
-      "lastLogin": null
+      "password": "Super@2024",
+      "name": "Supervisor User",
+      "role": "supervisor",
+      "department": "Collections"
     },
     {
-      "id": "USR1003",
+      "id": 3,
       "username": "agent1",
       "email": "agent1@ncbabank.co.ke",
-      "password": "$2a$10$9k3bqmWmK1CjuBXE3fodR.CjyT/YIzqvhp3jOxh2xzSDTWCU5IiKy",
-      "fullName": "John Mwangi",
-      "employeeId": "EMP003",
-      "role": "AGENT",
-      "department": "Collections",
-      "isActive": true,
-      "createdAt": "2025-12-12T10:01:18.971Z",
-      "updatedAt": "2025-12-12T10:01:18.971Z",
-      "lastLogin": null
+      "password": "Agent@2024",
+      "name": "Agent User",
+      "role": "agent",
+      "department": "Collections"
+    },
+    {
+      "id": 4,
+      "username": "staff",
+      "email": "staff@ncbabank.co.ke",
+      "password": "password123",
+      "name": "Collections Staff",
+      "role": "staff",
+      "department": "Collections"
     }
   ],
   "customers": [

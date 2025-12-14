@@ -11,6 +11,10 @@ const paymentRoutes = require('./routes/paymentRoutes');
 
 // Initialize Express
 const app = express();
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
 
 // Basic middleware
 app.use(cors());
@@ -46,15 +50,15 @@ app.get('/health', (req, res) => {
 const startServer = async () => {
   try {
     console.log('🚀 Starting STK Push Loan Repayment System...');
-    
+
     // Connect to database
     await connectDB();
-    
+
     // Setup routes
     app.use('/api/auth', authRoutes);
     app.use('/api/customers', customerRoutes);
     app.use('/api/payments', paymentRoutes);
-    
+
     // 404 handler
     app.use('*', (req, res) => {
       res.status(404).json({
@@ -62,10 +66,13 @@ const startServer = async () => {
         message: 'Route not found'
       });
     });
-    
+
     // Error handler
     app.use(errorHandler);
-    
+
+    app.use('/api/payments', paymentRoutes);
+    app.use('/api/customers', customerRoutes);
+
     // Start server
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
@@ -89,7 +96,7 @@ const startServer = async () => {
 📁 Database file: backend/db.json
 `);
     });
-    
+
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
