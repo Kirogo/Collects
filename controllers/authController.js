@@ -1,108 +1,155 @@
-const fs = require('fs').promises;
-const path = require('path');
+// controllers/authController.js
+const { getDB } = require('../config/database');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const authController = {
-  // Login endpoint
-  login: async (req, res) => {
-    try {
-      console.log('📱 Login request received');
-      console.log('Request body:', req.body);
-      
-      const { email, username, password } = req.body;
-      
-      // Validate input
-      if (!password) {
-        return res.status(400).json({
-          success: false,
-          message: 'Password is required'
-        });
-      }
-      
-      const identifier = email || username;
-      if (!identifier) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email or username is required'
-        });
-      }
-      
-      // Read users from db.json
-      const dbPath = path.join(__dirname, '../db.json');
-      const data = await fs.readFile(dbPath, 'utf8');
-      const db = JSON.parse(data);
-      const users = db.users || [];
-      
-      console.log(`Found ${users.length} users in database`);
-      
-      // Find user
-      const user = users.find(u => 
-        (u.email && u.email === identifier) || 
-        (u.username && u.username === identifier) ||
-        (u.email && u.email.toLowerCase() === identifier.toLowerCase()) ||
-        (u.username && u.username.toLowerCase() === identifier.toLowerCase())
-      );
-      
-      if (!user) {
-        console.log(`User not found: ${identifier}`);
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email/username or password'
-        });
-      }
-      
-      // Check password
-      if (user.password !== password) {
-        console.log(`Invalid password for: ${identifier}`);
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email/username or password'
-        });
-      }
-      
-      // Generate token
-      const token = jwt.sign(
-        {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          role: user.role,
-          name: user.name
-        },
-        process.env.JWT_SECRET || 'ncba-collections-secret-key',
-        { expiresIn: '8h' }
-      );
-      
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
-      
-      console.log(`✅ Login successful for: ${user.email}`);
-      
-      res.json({
-        success: true,
-        message: 'Login successful',
-        token,
-        user: userWithoutPassword
-      });
-      
-    } catch (error) {
-      console.error('🔥 Login error:', error);
-      res.status(500).json({
+exports.login = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    console.log('Login attempt for:', username);
+    
+    if (!username || !password) {
+      return res.status(400).json({
         success: false,
-        message: 'Server error during login',
-        error: error.message
+        message: 'Please provide username and password'
       });
     }
-  },
-  
-  // Get current user
-  getCurrentUser: (req, res) => {
+
+    const db = getDB();
+    await db.read();
+    
+    // Find user by username or email
+    const user = db.data.users.find(u => 
+      u.username === username || u.email === username
+    );
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid username or password'
+      });
+    }
+    
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Account is deactivated'
+      });
+    }
+    
+    // Compare passwords
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid username or password'
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        username: user.username, 
+        role: user.role 
+      },
+      process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+      { expiresIn: '8h' }
+    );
+
+    // Update last login
+    user.lastLogin = new Date().toISOString();
+    await db.write();
+
+    // Remove password from response
+    const userResponse = { ...user };
+    delete userResponse.password;
+
     res.json({
       success: true,
-      user: req.user || null
+      message: 'Login successful',
+      data: {
+        user: userResponse,
+        token
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during login'
     });
   }
 };
 
-// Make sure to export properly
-module.exports = authController;
+exports.getCurrentUser = async (req, res) => {
+  try {
+    const db = getDB();
+    await db.read();
+    
+    const user = db.data.users.find(u => u.id === req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Remove password from response
+    const userResponse = { ...user };
+    delete userResponse.password;
+
+    res.json({
+      success: true,
+      data: userResponse
+    });
+  } catch (error) {
+    console.error('Get current user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching user data'
+    });
+  }
+};
+
+// Add this function to authController.js
+exports.debugUsers = async (req, res) => {
+  try {
+    const db = getDB();
+    await db.read();
+    
+    // Return user info (without passwords for security)
+    const usersInfo = db.data.users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive !== false, // Default to true
+      passwordLength: user.password ? user.password.length : 0,
+      passwordType: user.password?.startsWith('$2') ? 'hashed' : 'plain'
+    }));
+    
+    res.json({
+      success: true,
+      data: usersInfo
+    });
+  } catch (error) {
+    console.error('Debug users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+exports.logout = async (req, res) => {
+  // Since we're using JWT, client just needs to discard the token
+  res.json({
+    success: true,
+    message: 'Logout successful'
+  });
+};

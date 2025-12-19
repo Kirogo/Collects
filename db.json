@@ -4,16 +4,18 @@
       "id": 1,
       "username": "admin",
       "email": "admin@ncbagroup.com",
-      "password": "admin@1",
+      "password": "$2a$10$fMQgdpoltB.CvS.07Yl8EugBj9AgvlPeSdf9A.F/GM793UVjnVxdm",
       "name": "Admin",
       "role": "admin",
-      "department": "Collections"
+      "department": "Collections",
+      "isActive": true,
+      "lastLogin": "2025-12-17T08:01:29.003Z"
     },
     {
       "id": 2,
       "username": "chris.paul",
       "email": "chris.paul@ncbagroup.com",
-      "password": "cpaul@2025",
+      "password": "$2a$10$SAjgyTrqeTKPbDCRQc9RJOyBc3jozLhGRMk9WB2TfB.Dp1RCeysZm",
       "name": "Chris Paul",
       "role": "admin",
       "department": "Collections"
@@ -22,17 +24,19 @@
       "id": 3,
       "username": "samuel.kirogo",
       "email": "samuel.kirogo@ncbagroup.com",
-      "password": "pass1234",
+      "password": "$2a$10$H6k2pR3E.2gdSDC5mHcIMO4lh4DM13zYadpV3dahy8bn9OzFYuUMe",
       "name": "Samuel Kirogo",
       "role": "admin",
-      "department": "Collections"
+      "department": "Collections",
+      "isActive": true,
+      "lastLogin": "2025-12-19T08:51:25.439Z"
     }
   ],
   "customers": [
     {
       "id": "CUS1001",
       "phoneNumber": "254712345678",
-      "name": "John Kamau",
+      "name": "John Kamau Mwangi",
       "customerId": "CUST001",
       "accountNumber": "LOAN001234",
       "loanBalance": 150000,
@@ -47,7 +51,7 @@
     {
       "id": "CUS1002",
       "phoneNumber": "254723456789",
-      "name": "Mary Wanjiku",
+      "name": "Mary Wanjiku Wamuyu",
       "customerId": "CUST002",
       "accountNumber": "LOAN001235",
       "loanBalance": 75000,
@@ -62,7 +66,7 @@
     {
       "id": "CUS1003",
       "phoneNumber": "254734567890",
-      "name": "Peter Ochieng",
+      "name": "Peter Ochieng Ombogo",
       "customerId": "CUST003",
       "accountNumber": "LOAN001236",
       "loanBalance": 250000,
@@ -77,7 +81,7 @@
     {
       "id": "CUS1004",
       "phoneNumber": "254707812730",
-      "name": "Tabitha Wambui",
+      "name": "Tabitha Wambui Ngugi",
       "customerId": "CUST004",
       "accountNumber": "LOAN001237",
       "loanBalance": 250000,
@@ -92,7 +96,7 @@
     {
       "id": "CUS1005",
       "phoneNumber": "254724748435",
-      "name": "Cyrus Murimi",
+      "name": "Cyrus Murimi Muriithi",
       "customerId": "CUST005",
       "accountNumber": "LOAN001238",
       "loanBalance": 576000,
@@ -107,7 +111,7 @@
     {
       "id": "CUS1006",
       "phoneNumber": "254787425792",
-      "name": "Melina Mwende",
+      "name": "Melina Mwende Nthiwa",
       "customerId": "CUST006",
       "accountNumber": "LOAN001238",
       "loanBalance": 65000,

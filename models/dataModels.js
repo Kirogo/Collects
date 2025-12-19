@@ -44,7 +44,7 @@ const userSchema = {
   password: '',           // Hashed
   fullName: '',           // Staff full name
   employeeId: '',         // Staff ID
-  role: 'AGENT',          // ADMIN, SUPERVISOR, AGENT
+  role: 'AGENT',        
   department: '',         // e.g., "Collections", "Customer Service"
   isActive: true,
   lastLogin: null,

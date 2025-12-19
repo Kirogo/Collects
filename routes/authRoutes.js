@@ -9,6 +9,8 @@ router.post('/login', authController.login);
 // GET /api/auth/me - Get current user (protected)
 router.get('/me', authenticate, authController.getCurrentUser);
 
+router.get('/debug-users', authController.debugUsers);
+
 // GET /api/auth/check - Health check
 router.get('/check', (req, res) => {
   res.json({

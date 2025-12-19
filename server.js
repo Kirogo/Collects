@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { connectDB, db } = require('./config/database');
+const { connectDB } = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 
 // Import routes
@@ -11,13 +11,16 @@ const paymentRoutes = require('./routes/paymentRoutes');
 
 // Initialize Express
 const app = express();
+
+// CORS middleware - ONLY ONCE
 app.use(cors({
   origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Basic middleware
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -32,7 +35,13 @@ app.get('/', (req, res) => {
   res.json({
     message: 'STK Push Loan Repayment System API',
     status: 'running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      auth: '/api/auth',
+      customers: '/api/customers',
+      payments: '/api/payments',
+      health: '/health'
+    }
   });
 });
 
@@ -42,7 +51,7 @@ app.get('/health', (req, res) => {
     status: 'OK',
     service: 'STK Push Loan Repayment System',
     timestamp: new Date().toISOString(),
-    database: db ? 'connected' : 'connecting'
+    version: '1.0.0'
   });
 });
 
@@ -70,9 +79,6 @@ const startServer = async () => {
     // Error handler
     app.use(errorHandler);
 
-    app.use('/api/payments', paymentRoutes);
-    app.use('/api/customers', customerRoutes);
-
     // Start server
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
@@ -84,9 +90,9 @@ const startServer = async () => {
    - Login: POST http://localhost:${PORT}/api/auth/login
    
 🔑 Default Credentials:
-   Admin: admin@ncbabank.co.ke / Admin@2024
-   Supervisor: supervisor@ncbabank.co.ke / Super@2024
-   Agent: agent1@ncbabank.co.ke / Agent@2024
+   Admin: admin / Admin@2024
+   Supervisor: supervisor / Super@2024
+   Agent: agent1 / Agent@2024
    
 👥 Sample Customers (for testing):
    1. 254712345678 - John Kamau
