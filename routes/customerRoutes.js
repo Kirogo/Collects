@@ -1,34 +1,33 @@
 const express = require('express');
 const router = express.Router();
-const customerController = require('../controllers/customerController');
+const {
+  createCustomer,
+  getCustomers,
+  getCustomer,
+  getCustomerByPhone,
+  updateCustomer,
+  deleteCustomer,
+  getDashboardStats
+} = require('../controllers/customerController');
+const { protect, authorize } = require('../middleware/auth');
 
-// Import middleware - NOTE: it's 'authenticate' not 'auth'
-const { authenticate } = require('../middleware/auth');
+// All routes are protected
+router.use(protect);
 
-// For now, remove requireRole or create a simple one
-// Since your auth.js doesn't export requireRole, we'll create a temporary one
-const requireRole = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Insufficient permissions.'
-      });
-    }
-    next();
-  };
-};
+// Routes
+router.route('/')
+  .post(authorize('admin', 'supervisor', 'agent'), createCustomer)
+  .get(authorize('admin', 'supervisor', 'agent'), getCustomers);
 
-// Apply authentication middleware to all routes
-router.use(authenticate);
+router.route('/dashboard/stats')
+  .get(authorize('admin', 'supervisor'), getDashboardStats);
 
-// Customer routes
-router.get('/', customerController.getCustomers);
-router.post('/', requireRole('AGENT', 'SUPERVISOR', 'ADMIN'), customerController.createCustomer);
-router.get('/dashboard/stats', customerController.getDashboardStats);
-router.get('/phone/:phoneNumber', customerController.getCustomerByPhone);
-router.get('/:id', customerController.getCustomer);
-router.put('/:id', requireRole('SUPERVISOR', 'ADMIN'), customerController.updateCustomer);
-router.delete('/:id', requireRole('ADMIN'), customerController.deleteCustomer);
+router.route('/phone/:phoneNumber')
+  .get(authorize('admin', 'supervisor', 'agent'), getCustomerByPhone);
+
+router.route('/:id')
+  .get(authorize('admin', 'supervisor', 'agent'), getCustomer)
+  .put(authorize('admin', 'supervisor'), updateCustomer)
+  .delete(authorize('admin'), deleteCustomer);
 
 module.exports = router;

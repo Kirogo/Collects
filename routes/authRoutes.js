@@ -1,23 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
-const { authenticate } = require('../middleware/auth');
+const { 
+  login, 
+  getCurrentUser, 
+  logout, 
+  register,
+  debugUsers 
+} = require('../controllers/authController');
+const { protect, authorize } = require('../middleware/auth');
 
-// POST /api/auth/login - Login with email or username
-router.post('/login', authController.login);
+// Public routes
+router.post('/login', login);
 
-// GET /api/auth/me - Get current user (protected)
-router.get('/me', authenticate, authController.getCurrentUser);
+// Protected routes
+router.use(protect);
 
-router.get('/debug-users', authController.debugUsers);
+router.get('/me', getCurrentUser);
+router.post('/logout', logout);
 
-// GET /api/auth/check - Health check
-router.get('/check', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Auth API is working',
-    timestamp: new Date().toISOString()
-  });
-});
+// Admin only routes
+router.post('/register', authorize('admin'), register);
+router.get('/debug', authorize('admin'), debugUsers);
 
 module.exports = router;

@@ -1,33 +1,43 @@
 const express = require('express');
 const router = express.Router();
-const paymentController = require('../controllers/paymentController');
+const {
+  initiateSTKPush,
+  processPin,
+  getTransactionStatus,
+  getTransactions,
+  getDashboardStats,
+  mpesaCallback,
+  getTransactionById,
+  cancelTransaction
+} = require('../controllers/paymentController');
+const { protect, authorize } = require('../middleware/auth');
 
-// Import middleware - NOTE: it's 'authenticate' not 'auth'
-const { authenticate } = require('../middleware/auth');
+// Public callback endpoint (no auth required)
+router.post('/mpesa-callback', mpesaCallback);
 
-// Create requireRole function since it's not in auth.js
-const requireRole = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Insufficient permissions.'
-      });
-    }
-    next();
-  };
-};
-
-// Public callback endpoint
-router.post('/callback', paymentController.mpesaCallback);
-
-// Apply authentication middleware to all routes below
-router.use(authenticate);
+// All other routes are protected
+router.use(protect);
 
 // Payment routes
-router.post('/stk-push', requireRole('AGENT', 'SUPERVISOR', 'ADMIN'), paymentController.initiateSTKPush);
-router.post('/process-pin', requireRole('AGENT', 'SUPERVISOR', 'ADMIN'), paymentController.processPin);
-router.get('/status/:transactionId', paymentController.getTransactionStatus);
-router.get('/transactions', paymentController.getTransactions);
+router.route('/initiate')
+  .post(authorize('admin', 'supervisor', 'agent'), initiateSTKPush);
+
+router.route('/process-pin')
+  .post(authorize('admin', 'supervisor', 'agent'), processPin);
+
+router.route('/transactions')
+  .get(authorize('admin', 'supervisor', 'agent'), getTransactions);
+
+router.route('/dashboard/stats')
+  .get(authorize('admin', 'supervisor'), getDashboardStats);
+
+router.route('/status/:transactionId')
+  .get(authorize('admin', 'supervisor', 'agent'), getTransactionStatus);
+
+router.route('/transaction/:id')
+  .get(authorize('admin', 'supervisor', 'agent'), getTransactionById);
+
+router.route('/cancel/:transactionId')
+  .post(authorize('admin', 'supervisor'), cancelTransaction);
 
 module.exports = router;
