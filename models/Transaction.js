@@ -1,3 +1,4 @@
+// models/Transaction.js
 const mongoose = require('mongoose');
 
 const TransactionSchema = new mongoose.Schema({
@@ -42,7 +43,7 @@ const TransactionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['PENDING', 'SUCCESS', 'FAILED', 'CANCELLED'],
+    enum: ['PENDING', 'SUCCESS', 'FAILED', 'CANCELLED', 'EXPIRED'], // ADDED EXPIRED
     default: 'PENDING',
     index: true
   },
@@ -103,6 +104,15 @@ const TransactionSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  failureReason: { // NEW FIELD for failed transactions
+    type: String,
+    enum: ['INSUFFICIENT_FUNDS', 'TECHNICAL_ERROR', 'WRONG_PIN', 'USER_CANCELLED', 'NETWORK_ERROR', 'EXPIRED', 'OTHER'],
+    trim: true
+  },
+  stkPushSentAt: { // NEW FIELD to track when STK push was sent
+    type: Date,
+    default: Date.now
+  },
   processedAt: {
     type: Date
   }
@@ -110,15 +120,11 @@ const TransactionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// REMOVE THESE - they're duplicates
-// TransactionSchema.index({ transactionId: 1 });  // DELETE
-// TransactionSchema.index({ mpesaReceiptNumber: 1 }, { sparse: true });  // DELETE
-// TransactionSchema.index({ status: 1, createdAt: -1 });  // DELETE
-
-// Keep only compound indexes that aren't already covered
+// Indexes
 TransactionSchema.index({ customerId: 1, status: 1 });
 TransactionSchema.index({ phoneNumber: 1, createdAt: -1 });
 TransactionSchema.index({ createdAt: 1 });
+TransactionSchema.index({ status: 1, stkPushSentAt: 1 }); // For checking expired transactions
 
 // Static methods
 TransactionSchema.statics.generateTransactionId = function() {
@@ -134,6 +140,17 @@ TransactionSchema.statics.generateMpesaReceiptNumber = function() {
                  date.getDate().toString().padStart(2, '0');
   const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
   return `MC${dateStr}${random}`;
+};
+
+// Instance method to check if transaction is expired
+TransactionSchema.methods.isExpired = function() {
+  if (this.status !== 'PENDING') return false;
+  
+  const now = new Date();
+  const stkSentAt = this.stkPushSentAt || this.createdAt;
+  const thirtySecondsAgo = new Date(now.getTime() - 30000); // 30 seconds
+  
+  return stkSentAt < thirtySecondsAgo;
 };
 
 module.exports = mongoose.model('Transaction', TransactionSchema);

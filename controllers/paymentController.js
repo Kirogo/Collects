@@ -1,3 +1,6 @@
+// controllers/paymentController.js
+
+const cron = require('node-cron');
 const Transaction = require('../models/Transaction');
 const Customer = require('../models/Customer');
 const { 
@@ -488,6 +491,389 @@ exports.mpesaCallback = async (req, res) => {
     });
   }
 };
+
+/**
+ * @desc    Check and expire old pending transactions (cron job)
+ * @route   N/A (Runs automatically)
+ * @access  Private (System)
+ */
+exports.checkExpiredTransactions = async () => {
+  try {
+    const thirtySecondsAgo = new Date(Date.now() - 30000); // 30 seconds
+    
+    const expiredTransactions = await Transaction.find({
+      status: 'PENDING',
+      stkPushSentAt: { $lt: thirtySecondsAgo }
+    });
+
+    if (expiredTransactions.length > 0) {
+      console.log(`Found ${expiredTransactions.length} expired transactions`);
+      
+      for (const transaction of expiredTransactions) {
+        transaction.status = 'EXPIRED';
+        transaction.failureReason = 'EXPIRED';
+        transaction.errorMessage = 'STK Push expired (30 seconds) - Customer did not enter PIN';
+        transaction.updatedAt = new Date();
+        await transaction.save();
+      }
+    }
+  } catch (error) {
+    console.error('Error checking expired transactions:', error);
+  }
+};
+
+/**
+ * @desc    Get transaction status with detailed failure reasons
+ * @route   GET /api/payments/status/:transactionId
+ * @access  Private (Admin, Supervisor, Agent)
+ */
+exports.getTransactionStatus = async (req, res) => {
+  try {
+    const transaction = await Transaction.findOne({
+      transactionId: req.params.transactionId
+    }).populate('customerId', 'name phoneNumber').select('-__v');
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
+    }
+
+    // Check if transaction is expired (for real-time status)
+    if (transaction.status === 'PENDING' && transaction.isExpired()) {
+      transaction.status = 'EXPIRED';
+      transaction.failureReason = 'EXPIRED';
+      transaction.errorMessage = 'STK Push expired (30 seconds) - Customer did not enter PIN';
+      transaction.updatedAt = new Date();
+      await transaction.save();
+    }
+
+    res.json({
+      success: true,
+      data: { transaction }
+    });
+  } catch (error) {
+    console.error('Get transaction status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching transaction status'
+    });
+  }
+};
+
+// Update the processPin function to handle failure reasons better:
+/**
+ * @desc    Process MPesa PIN
+ * @route   POST /api/payments/process-pin
+ * @access  Private (Admin, Supervisor, Agent)
+ */
+exports.processPin = async (req, res) => {
+  const session = await Transaction.startSession();
+  session.startTransaction();
+  
+  try {
+    const { transactionId, pin, failureReason } = req.body; // Added failureReason
+
+    if (!transactionId) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide transaction ID'
+      });
+    }
+
+    // Find transaction with customer data
+    const transaction = await Transaction.findOne({
+      transactionId: transactionId
+    }).populate('customerId').session(session);
+    
+    if (!transaction) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found'
+      });
+    }
+
+    // Check if expired
+    if (transaction.status === 'PENDING' && transaction.isExpired()) {
+      transaction.status = 'EXPIRED';
+      transaction.failureReason = 'EXPIRED';
+      transaction.errorMessage = 'STK Push expired (30 seconds) - Customer did not enter PIN';
+      transaction.updatedAt = new Date();
+      await transaction.save({ session });
+      
+      await session.commitTransaction();
+      session.endSession();
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Transaction has expired. Please initiate a new payment.'
+      });
+    }
+
+    // Check if already processed
+    if (transaction.status !== 'PENDING') {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+        success: false,
+        message: `Transaction already ${transaction.status.toLowerCase()}`
+      });
+    }
+
+    // If failureReason is provided (for manual failure marking)
+    if (failureReason) {
+      transaction.status = 'FAILED';
+      transaction.failureReason = failureReason;
+      transaction.errorMessage = getFailureMessage(failureReason);
+      transaction.updatedAt = new Date();
+      await transaction.save({ session });
+      
+      await session.commitTransaction();
+      session.endSession();
+      
+      return res.json({
+        success: true,
+        message: 'Transaction marked as failed',
+        data: { transaction }
+      });
+    }
+
+    // Check pin attempts
+    if (transaction.pinAttempts >= 3) {
+      transaction.status = 'FAILED';
+      transaction.failureReason = 'WRONG_PIN';
+      transaction.errorMessage = 'Maximum PIN attempts exceeded';
+      transaction.updatedAt = new Date();
+      await transaction.save({ session });
+      
+      await session.commitTransaction();
+      session.endSession();
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum PIN attempts exceeded. Transaction failed.'
+      });
+    }
+
+    // Find customer
+    const customer = await Customer.findById(transaction.customerId._id).session(session);
+    if (!customer) {
+      transaction.status = 'FAILED';
+      transaction.failureReason = 'TECHNICAL_ERROR';
+      transaction.errorMessage = 'Customer not found';
+      transaction.updatedAt = new Date();
+      await transaction.save({ session });
+      
+      await session.commitTransaction();
+      session.endSession();
+      
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    // Validate PIN (demo: accepts any 4-digit PIN)
+    // In production, this would integrate with actual MPesa API
+    if (pin && /^\d{4,6}$/.test(pin)) {
+      // Simulate different scenarios for demo purposes
+      const random = Math.random();
+      
+      // 70% chance of success
+      if (random < 0.7) {
+        // Successful payment
+        const mpesaReceiptNumber = Transaction.generateMpesaReceiptNumber();
+        
+        // Update transaction
+        transaction.status = 'SUCCESS';
+        transaction.mpesaReceiptNumber = mpesaReceiptNumber;
+        transaction.processedAt = new Date();
+        transaction.updatedAt = new Date();
+        transaction.pinAttempts += 1;
+        
+        // Update customer
+        customer.loanBalance = transaction.loanBalanceAfter;
+        customer.arrears = transaction.arrearsAfter;
+        customer.totalRepayments += transaction.amount;
+        customer.lastPaymentDate = new Date();
+        customer.updatedAt = new Date();
+        
+        // Save both in transaction
+        await transaction.save({ session });
+        await customer.save({ session });
+        
+        await session.commitTransaction();
+        session.endSession();
+
+        // Response
+        res.json({
+          success: true,
+          message: 'Payment successful!',
+          data: {
+            receipt: mpesaReceiptNumber,
+            amount: transaction.amount,
+            newLoanBalance: customer.loanBalance,
+            newArrears: customer.arrears,
+            transactionId: transaction.transactionId,
+            transactionDate: transaction.processedAt
+          }
+        });
+      } 
+      // 15% chance of insufficient funds
+      else if (random < 0.85) {
+        transaction.status = 'FAILED';
+        transaction.failureReason = 'INSUFFICIENT_FUNDS';
+        transaction.errorMessage = 'Customer has insufficient funds in their MPESA account';
+        transaction.pinAttempts += 1;
+        transaction.updatedAt = new Date();
+        
+        await transaction.save({ session });
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(400).json({
+          success: false,
+          message: 'Payment failed: Insufficient funds in customer\'s MPESA account',
+          data: {
+            failureReason: 'INSUFFICIENT_FUNDS',
+            attemptsLeft: Math.max(0, 3 - transaction.pinAttempts)
+          }
+        });
+      }
+      // 15% chance of technical error
+      else {
+        transaction.status = 'FAILED';
+        transaction.failureReason = 'TECHNICAL_ERROR';
+        transaction.errorMessage = 'Technical error occurred during payment processing';
+        transaction.pinAttempts += 1;
+        transaction.updatedAt = new Date();
+        
+        await transaction.save({ session });
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(400).json({
+          success: false,
+          message: 'Payment failed due to technical error. Please try again.',
+          data: {
+            failureReason: 'TECHNICAL_ERROR',
+            attemptsLeft: Math.max(0, 3 - transaction.pinAttempts)
+          }
+        });
+      }
+    } else {
+      // Failed payment - increment attempt counter
+      transaction.pinAttempts += 1;
+      transaction.updatedAt = new Date();
+      
+      // Check if this was the final attempt
+      if (transaction.pinAttempts >= 3) {
+        transaction.status = 'FAILED';
+        transaction.failureReason = 'WRONG_PIN';
+        transaction.errorMessage = 'Maximum PIN attempts exceeded';
+      }
+      
+      await transaction.save({ session });
+      await session.commitTransaction();
+      session.endSession();
+
+      const attemptsLeft = 3 - transaction.pinAttempts;
+      
+      res.status(400).json({
+        success: false,
+        message: `Invalid MPesa PIN. ${attemptsLeft > 0 ? `You have ${attemptsLeft} attempt(s) left.` : 'Maximum attempts exceeded.'}`,
+        data: {
+          attemptsLeft: Math.max(0, attemptsLeft),
+          failureReason: attemptsLeft > 0 ? 'WRONG_PIN' : 'MAX_ATTEMPTS_EXCEEDED'
+        }
+      });
+    }
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    
+    console.error('Process PIN error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error processing payment'
+    });
+  }
+};
+
+// Helper function for failure messages
+function getFailureMessage(failureReason) {
+  const messages = {
+    'INSUFFICIENT_FUNDS': 'Customer has insufficient funds in their MPESA account',
+    'TECHNICAL_ERROR': 'Technical error occurred during payment processing',
+    'WRONG_PIN': 'Incorrect MPESA PIN entered',
+    'USER_CANCELLED': 'Customer cancelled the payment',
+    'NETWORK_ERROR': 'Network error occurred',
+    'EXPIRED': 'STK Push expired (30 seconds) - Customer did not enter PIN',
+    'OTHER': 'Payment failed due to unknown reasons'
+  };
+  
+  return messages[failureReason] || 'Payment failed';
+}
+
+/**
+ * @desc    Mark transaction as failed with specific reason
+ * @route   POST /api/payments/mark-failed/:transactionId
+ * @access  Private (Admin, Supervisor)
+ */
+exports.markTransactionFailed = async (req, res) => {
+  try {
+    const { failureReason } = req.body;
+    
+    if (!failureReason) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a failure reason'
+      });
+    }
+
+    const transaction = await Transaction.findOne({
+      transactionId: req.params.transactionId,
+      status: 'PENDING'
+    });
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending transaction not found'
+      });
+    }
+
+    transaction.status = 'FAILED';
+    transaction.failureReason = failureReason;
+    transaction.errorMessage = getFailureMessage(failureReason);
+    transaction.updatedAt = new Date();
+    await transaction.save();
+
+    res.json({
+      success: true,
+      message: 'Transaction marked as failed',
+      data: { transaction }
+    });
+  } catch (error) {
+    console.error('Mark transaction failed error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error marking transaction as failed'
+    });
+  }
+};
+
+// Add this to your routes file (usually routes/paymentRoutes.js) or in the controller setup
+// Schedule cron job to check for expired transactions every 10 seconds
+cron.schedule('*/10 * * * * *', () => {
+  console.log('Checking for expired transactions...');
+  exports.checkExpiredTransactions();
+});
 
 /**
  * @desc    Get payment dashboard statistics

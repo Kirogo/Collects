@@ -21,7 +21,8 @@
     "lowdb": "^6.0.1",
     "mongoose": "^9.0.2",
     "morgan": "^1.10.1",
-    "nanoid": "^5.0.4"
+    "nanoid": "^5.0.4",
+    "node-cron": "^4.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
